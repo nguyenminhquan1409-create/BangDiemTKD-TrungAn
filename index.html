@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>TKD SCOREBOARD - PRO SCALING</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root { 
+            --red-side: #ff1744; 
+            --blue-side: #2962ff;
+            --bg-dark: #000000;
+            --gold: #ffea00;
+            --rest-color: #ffffff; 
+        }
+
+        body { 
+            background: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; text-transform: uppercase;
+        }
+
+        /* --- CẬP NHẬT: MÀN HÌNH KHÓA TRONG SUỐT MỜ --- */
+        #password-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0); /* Màu đen trong suốt 60% */
+            backdrop-filter: blur(15px); /* Hiệu ứng làm mờ bảng điểm phía sau */
+            -webkit-backdrop-filter: blur(15px); /* Hỗ trợ Safari */
+            z-index: 9999; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            transition: 0.5s;
+        }
+        .pw-box {
+            background: rgba(26, 26, 26, 0.9); /* Hộp nhập liệu hơi đục để nổi bật */
+            padding: 40px; border-radius: 15px;
+            border: 2px solid var(--gold); text-align: center;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+        .pw-input {
+            padding: 15px; font-size: 1.5rem; border-radius: 8px; border: 1px solid #444;
+            background: #FFFFFF; color: #000; /* Để màu đen cho dễ nhìn trên nền trắng */
+            text-align: center; width: 250px; margin-bottom: 20px;
+            outline: none;
+        }
+        .pw-input:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+        .pw-btn {
+            padding: 12px 40px; background: var(--gold); color: black;
+            font-weight: bold; border-radius: 8px; cursor: pointer; border: none;
+            font-size: 1.1rem; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .pw-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        /* ---------------------------------- */
+
+        .top-header-bar {
+            position: absolute; top: 0; left: 0; width: 100%;
+            background: #000000; height: 6vh; display: flex;
+            justify-content: center; align-items: center;
+            border-bottom: 0px solid #333; z-index: 1000;
+        }
+        .weight-info { font-size: 3vh; font-weight: 900; color: #ffffff; letter-spacing: 0.3vw; }
+        
+        #winner-banner {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; padding: 4vh 0; display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 5000; text-align: center;
+            background: rgba(0,0,0,0.9); 
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid var(--gold);
+        }
+        #winner-banner h1 { font-size: 10vw; margin: 0; font-weight: 900; color: white; }
+        #winner-banner p { font-size: 2.5vw; margin: 0; font-weight: bold; letter-spacing: 1.5vw; color: var(--gold); }
+
+        .tie-selection-box { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; flex-direction: column; align-items: center; gap: 10px; z-index: 6000;
+            width: 19vw; background: transparent; border: none;
+        }
+        
+        .tie-label-tag {
+            background: white; color: black; padding: 4px 12px;
+            font-size: 1.1vw; font-weight: 900; border-radius: 4px;
+            white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-select-row { display: flex; gap: 10px; width: 100%; }
+
+        .btn-select { 
+            flex: 1; padding: 12px 0; font-size: 1.3vw; font-weight: 900; 
+            border: 2px solid white; border-radius: 8px; cursor: pointer; 
+            color: white; text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-select:active { transform: scale(0.95); }
+        .select-red { background: var(--red-side); }
+        .select-blue { background: var(--blue-side); }
+
+        #ptg-display {
+            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--gold); color: black; font-size: 15vh; font-weight: 900;
+            padding: 2vh 5vw; border-radius: 10px; z-index: 6000; display: none;
+            box-shadow: 0 0 10vh rgba(255, 234, 0, 0.5);
+        }
+
+        .side { 
+            flex: 1; width: 50%; display: flex; flex-direction: column; 
+            align-items: center; justify-content: space-between; 
+            padding: 5vh 0 20vh 0; 
+            position: relative; box-sizing: border-box; 
+        }
+        .red { background: linear-gradient(145deg, #80001a 0%, var(--red-side) 100%); border-right: 0.2vw solid #111; }
+        .blue { background: linear-gradient(215deg, #001e80 0%, var(--blue-side) 100%); }
+
+        .player-label { font-size: 4vh; font-weight: 900; letter-spacing: 0.1vw; height: 10vh; display: flex; align-items: center; }
+        
+        .score-container { height: 40vh; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
+        .score { font-size: 27vw; font-weight: 900; line-height: 0.8; font-family: 'Arial Black', sans-serif; text-shadow: 0 2vh 5vh rgba(0,0,0,0.9); }
+
+        .point-log { position: absolute; top: 12vh; width: 8vw; height: 50vh; display: flex; flex-direction: column; gap: 0.5vh; overflow-y: auto; scrollbar-width: none; z-index: 999; }
+        #r-logs { left: 1vw; align-items: flex-start; }
+        #b-logs { right: 1vw; align-items: flex-end; }
+        .log-item { font-size: 1.5vh; font-weight: 800; color: rgba(255, 255, 255, 0.8); background: rgba(0,0,0,0.3); padding: 0.4vh 0.8vw; border-radius: 0.5vh; white-space: nowrap; border-left: 0.3vw solid var(--gold); }
+
+        .footer-info { 
+            display: flex; flex-direction: column; align-items: center; 
+            height: 22vh; justify-content: center; z-index: 10; 
+        }
+        
+        .gj-container { 
+            background: rgba(0,0,0,0.95); padding: 1vh 1vw; border-radius: 10vh; border: 0.2vh solid rgba(255,255,255,0.15); 
+            display: flex; flex-direction: column; align-items: center; min-width: 10vw;
+        }
+        .gj-label { font-size: 2.5vh; color: #ff5252; font-weight: 900; line-height: 1; }
+        .gj-value { font-size: 8vh; font-weight: 900; line-height: 0.9; color: white; }
+
+        .win-dots { display: flex; gap: 2vw; margin-top: 2vh; }
+        .dot { width: 4vh; height: 4vh; border-radius: 50%; background: rgba(255,255,255,0.15); border: 0.3vh solid rgba(255,255,255,0.3); }
+        .dot.active { background: var(--gold); box-shadow: 0 0 2vh var(--gold); border-color: white; }
+
+        .match-display-container {
+            position: absolute; top: 6.2vh; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.95); padding: 0.5vh 3vw; 
+            display: flex; flex-direction: column; align-items: center; z-index: 200;
+        }
+        .match-label { font-size: 3vh; color: white; font-weight: 900; line-height: 1; }
+        .match-value { font-size: 7vh; font-weight: 900; line-height: 0.9; color: white; }
+
+        .center-console { 
+            position: absolute; bottom: 25vh; left: 50%; transform: translateX(-50%); 
+            background: rgba(0,0,0,0.95); border: 0.3vh solid #ffffff; border-radius: 10vh; 
+            padding: 1vh 0vw; text-align: center; display: flex; flex-direction: column; align-items: center;
+            min-width: 19vw; z-index: 100; 
+        }
+        #round-display { font-size: 3.5vh; font-weight: bold; color: #ffffff; }
+        #timer-display { font-size: 11vh; color: var(--gold); font-family: 'Courier New', monospace; font-weight: bold; line-height: 1; }
+
+        .signature-text {
+            position: absolute; bottom: 23vh; left: 49.06%; transform: translateX(-50%);
+            color: #ffffff; font-weight: bold; font-size: 1.2vh; text-transform: none; 
+            z-index: 50; letter-spacing: 1px; opacity: 0.7;
+        }
+
+        .desk-controls { 
+            position: fixed; bottom: 0; left: 0; right: 0; background: #0a0a0a; 
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; 
+            border-top: 2px solid #333; z-index: 4000; opacity: 0.1; transition: 0.3s; 
+        }
+        .desk-controls:hover { opacity: 1; }
+        .desk-controls label { font-size: 0.85rem; color: #ffea00; } 
+        .btn-group-side { display: flex; flex-direction: column; gap: 6px; }
+        .btn-row { display: flex; gap: 6px; align-items: center; }
+        .btn-desk { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; font-size: 0.85rem; text-transform: uppercase; white-space: nowrap; min-width: 50px; text-align: center; } 
+        .input-text { background: #111; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 0.9rem; width: 110px; } 
+        .input-num { width: 45px; background: #000; color: var(--gold); border: 1px solid #444; text-align: center; border-radius: 4px; padding: 6px; font-weight: bold; font-size: 1rem; } 
+        .select-custom { background: #000; color: #fff; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 0.85rem; }
+
+        .score-flash { animation: blink-score 0.8s infinite; }
+        @keyframes blink-score { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes popIn { from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+        .timer-paused { color: #ff1744 !important; animation: blink-timer 1s infinite; }
+        @keyframes blink-timer { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- --- PHẦN HTML: MÀN HÌNH KHÓA --- -->
+    <div id="password-overlay">
+        <div class="pw-box">
+            <h2 style="color: var(--gold); margin-bottom: 30px;">HỆ THỐNG BẢNG ĐIỂM FOX-TAEKWONDO</h2>
+            <input type="password" id="access-pw" class="pw-input" placeholder="NHẬP MẬT KHẨU">
+            <br>
+            <button class="pw-btn" onclick="verifyAccess()">XÁC NHẬN TRUY CẬP</button>
+        </div>
+    </div>
+
+    <div class="top-header-bar">
+        <div class="weight-info">HẠNG CÂN: <span id="weight-sign-display"></span><span id="weight-num-display">50</span> KG</div>
+    </div>
+    <div id="ptg-display">PTG</div>
+    
+    <div id="tie-selection-ui" class="tie-selection-box">
+        <div class="tie-label-tag">Hòa Tuyệt Đối</div>
+        <div class="btn-select-row">
+            <button class="btn-select select-red" onclick="pickTieWinner('red')">ĐỎ</button>
+            <button class="btn-select select-blue" onclick="pickTieWinner('blue')">XANH</button>
+        </div>
+    </div>
+
+    <div id="winner-banner">
+        <p id="winner-label-type">WINNER</p>
+        <h1 id="winner-name-text">TÊN VĐV</h1>
+    </div>
+
+    <div class="match-display-container">
+        <div class="match-label">MATCH</div>
+        <div id="match-num-display" class="match-value">1</div>
+    </div>
+    
+    <div class="side red" id="red-box">
+        <div class="player-label" id="r-name-display">HONG (Đỏ)</div>
+        <div class="score-container"><div class="score" id="r-score">0</div></div>
+        <div class="footer-info">
+            <div class="gj-container"><div class="gj-label">GAM-JEOM</div><div id="r-gj" class="gj-value">0</div></div>
+            <div class="win-dots" id="r-wins"><div class="dot"></div><div class="dot"></div></div>
+        </div>
+    </div>
+
+    <div class="center-console" id="main-console">
+        <div id="round-display">ROUND 1</div>
+        <div id="timer-display">02:00</div>
+    </div>
+    <div class="signature-text">Nguyễn Minh Quân - 0937.707.001</div>
+
+    <div class="side blue" id="blue-box">
+        <div class="player-label" id="b-name-display">CHUNG (Xanh)</div>
+        <div class="score-container"><div class="score" id="b-score">0</div></div>
+        <div class="footer-info">
+            <div class="gj-container"><div class="gj-label">GAM-JEOM</div><div id="b-gj" class="gj-value">0</div></div>
+            <div class="win-dots" id="b-wins"><div class="dot"></div><div class="dot"></div></div>
+        </div>
+    </div>
+
+    <div class="point-log" id="r-logs"></div>
+    <div class="point-log" id="b-logs"></div>
+
+    <div class="desk-controls">
+        <div class="btn-group-side">
+            <div class="btn-row"><input type="text" id="in-r-name" class="input-text" placeholder="Tên VĐV Đỏ"><button class="btn-desk" style="background:#555" onclick="updateNames()">Đổi Tên</button></div>
+            <div style="display: flex; gap: 8px;">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <div class="btn-row">
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('rS', 1)">+1</button>
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('rS', 2)">+2</button>
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('rS', 3)">+3</button>
+                        <button class="btn-desk" style="background:#d4af37" onclick="addPointDirect('rS', 4)">+4</button>
+                        <button class="btn-desk" style="background:#ff9800" onclick="addPointDirect('rS', 6)">+6</button>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('rS', 1)">-1</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('rS', 2)">-2</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('rS', 3)">-3</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('rS', 4)">-4</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('rS', 6)">-6</button>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <button class="btn-desk" style="background:#d32f2f; flex:1;" onclick="addGj('rG')">+ 1 LỖI</button>
+                    <button class="btn-desk" style="background:#2e7d32; flex:1;" onclick="subGj('rG')">HỦY LỖI</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row" style="background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 0px; border: 5px solid #ffffff; gap: 10px;">
+            <div style="display:flex; flex-direction:column; gap:4px; border-right:1px solid #444; padding-right:10px;">
+                <label>MAX LỖI: 
+                    <select id="in-max-gj" class="select-custom" onchange="updateRules()">
+                        <option value="0">TẮT</option>
+                        <option value="5">5 LỖI</option>
+                    </select>
+                </label>
+                <label>MAX ĐIỂM: 
+                    <select id="in-max-pts" class="select-custom" onchange="updateRules()">
+                        <option value="0">TẮT</option>
+                        <option value="30">30</option>
+                        <option value="40">40</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:6px; border-right: 1px solid #444; padding-right: 10px;">
+                <div class="btn-row">
+                    <label>TRẬN: </label>
+                    <input type="number" id="in-match-num" class="input-num" value="1">
+                    <button class="btn-desk" style="background:#444; min-width:unset; padding:4px 8px;" onclick="updateMatchNum()">Đặt</button>
+                </div>
+                <div class="btn-row">
+                    <label style="color:#fff;">KG: </label>
+                    <input type="text" id="in-weight-combined" class="input-text" style="width:60px" placeholder="-50">
+                    <button class="btn-desk" style="background:#555; min-width:unset; padding:4px 8px;" onclick="updateWeight()">Lưu</button>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:4px; border-right:1px solid #444; padding-right:10px;">
+                <div class="btn-row"><label style="font-size:0.65rem">PW R1:</label><input type="text" id="pw-R1" class="input-num" style="width:40px; font-size:0.8rem" onchange="updateRefPassword('R1')"></div>
+                <div class="btn-row"><label style="font-size:0.65rem">PW R2:</label><input type="text" id="pw-R2" class="input-num" style="width:40px; font-size:0.8rem" onchange="updateRefPassword('R2')"></div>
+                <div class="btn-row"><label style="font-size:0.65rem">PW R3:</label><input type="text" id="pw-R3" class="input-num" style="width:40px; font-size:0.8rem" onchange="updateRefPassword('R3')"></div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:6px; border-right: 1px solid #444; padding-right: 10px;">
+                <div class="btn-row">
+                    <input type="number" id="in-min" class="input-num" value="2">:<input type="number" id="in-sec" class="input-num" value="0">
+                    <button class="btn-desk" style="background:#444; min-width: 90px;" onclick="setCustomTime()">Thi Đấu</button>
+                </div>
+                <div class="btn-row">
+                    <input type="number" id="in-rest-min" class="input-num" value="1">:<input type="number" id="in-rest-sec" class="input-num" value="0">
+                    <button class="btn-desk" style="background:#555; min-width: 90px;" onclick="setRestTime()">Nghỉ</button>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div class="btn-row" style="gap: 4px;">
+                    <button class="btn-desk" style="background:#1b5e20; min-width:75px;" id="btn-timer-ctrl" onclick="toggleTimer()">BẮT ĐẦU</button>
+                    <button class="btn-desk" style="background:#311b92; min-width:75px;" onclick="nextRoundManual()">Kết thúc</button>
+                    <button class="btn-desk" style="background:#b71c1c; min-width:75px;" onclick="resetAll()">RESET</button>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size: 0.75rem; color:#ffea00;">
+                        <input type="checkbox" id="one-ref-toggle" onchange="toggleOneRef()"> 1 Ref
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size: 0.75rem; color:#ffea00;">
+                        <input type="checkbox" id="gap-toggle" onchange="toggleGap()"> PTG
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group-side">
+            <div class="btn-row"><input type="text" id="in-b-name" class="input-text" placeholder="Tên VĐV Xanh"><button class="btn-desk" style="background:#555" onclick="updateNames()">Đổi tên</button></div>
+            <div style="display: flex; gap: 8px;">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <div class="btn-row">
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('bS', 1)">+1</button>
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('bS', 2)">+2</button>
+                        <button class="btn-desk" style="background:#2e7d32" onclick="addPointDirect('bS', 3)">+3</button>
+                        <button class="btn-desk" style="background:#d4af37" onclick="addPointDirect('bS', 4)">+4</button>
+                        <button class="btn-desk" style="background:#ff9800" onclick="addPointDirect('bS', 6)">+6</button>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('bS', 1)">-1</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('bS', 2)">-2</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('bS', 3)">-3</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('bS', 4)">-4</button>
+                        <button class="btn-desk" style="background:#444" onclick="subPointDirect('bS', 6)">-6</button>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <button class="btn-desk" style="background:#0000ff; flex:1;" onclick="addGj('bG')">+ 1 LỖI</button>
+                    <button class="btn-desk" style="background:#2e7d32; flex:1;" onclick="subGj('bG')">HỦY LỖI</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCXOkedrQlH6vpLI_wYMzTvV5fsbrlWhWU",
+  authDomain: "tkdtrungan-41f63.firebaseapp.com",
+  databaseURL: "https://tkdtrungan-41f63-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tkdtrungan-41f63",
+  storageBucket: "tkdtrungan-41f63.firebasestorage.app",
+  messagingSenderId: "59952016876",
+  appId: "1:59952016876:web:4716bd2eb1bde2d6b624c9",
+  measurementId: "G-ZHLQT8FD5H" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const matchRef = db.ref('match');
+        const hitsRef = db.ref('hits');
+
+        // --- PHẦN JS: LOGIC BẢO MẬT ---
+        function verifyAccess() {
+            const userIn = document.getElementById('access-pw').value;
+            db.ref('settings/access_password').once('value').then((snap) => {
+                const correctPw = snap.val();
+                if (!correctPw) {
+                    alert("Chưa thiết lập mật khẩu trên Firebase!");
+                    return;
+                }
+                if (userIn === correctPw.toString()) {
+                    document.getElementById('password-overlay').style.display = 'none';
+                    sessionStorage.setItem('board_auth', 'true');
+                } else {
+                    alert("Mật khẩu không chính xác!");
+                }
+            });
+        }
+
+        if (sessionStorage.getItem('board_auth') === 'true') {
+            document.getElementById('password-overlay').style.display = 'none';
+        }
+
+        document.getElementById('access-pw').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') verifyAccess();
+        });
+
+        async function trackHLV() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                const userKey = data.ip.replace(/\./g, '_');
+                db.ref('active_users/' + userKey).set({ location: `${data.city}, ${data.region}`, time: firebase.database.ServerValue.TIMESTAMP });
+                db.ref('active_users/' + userKey).onDisconnect().remove();
+            } catch (e) {}
+        }
+        trackHLV();
+
+        db.ref('referee_passwords').set({ R1: "", R2: "", R3: "" });
+        db.ref('referee_status').remove();
+        db.ref('referee_passwords').onDisconnect().remove();
+        db.ref('referee_status').onDisconnect().remove();
+
+        let currentData = { bS: 0, rS: 0, bG: 0, rG: 0, bW: 0, rW: 0, round: 1, time: 120, run: false, isRest: false, rName: "HONG", bName: "CHUNG", rLogs: [], bLogs: [], gapEnabled: false, winnerDeclared: false, maxGj: 0, maxPts: 0, oneRefMode: false, matchNum: 1, weightNum: "50", weightSign: "-", r6:0, r4:0, r3:0, r2:0, r1:0, b6:0, b4:0, b3:0, b2:0, b1:0 };
+        let lastScores = { bS: 0, rS: 0 };
+        let timerInterval = null;
+        let recentHits = []; 
+
+        function getSetMatchTime() {
+            const m = parseInt(document.getElementById('in-min').value) || 0;
+            const s = parseInt(document.getElementById('in-sec').value) || 0;
+            return (m * 60) + s;
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' || e.keyCode === 32) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+                    e.preventDefault(); toggleTimer();
+                }
+            }
+        });
+
+        matchRef.on('value', (snap) => {
+            const data = snap.val(); if(!data) return;
+            
+            // Vá lỗi mảng rỗng bị Firebase xóa
+            data.rLogs = data.rLogs || [];
+            data.bLogs = data.bLogs || [];
+
+            document.getElementById('in-max-pts').value = data.maxPts || 0;
+            document.getElementById('in-max-gj').value = data.maxGj || 0;
+
+            if (data.bS !== lastScores.bS) { flash('blue-box', 'flash'); lastScores.bS = data.bS; }
+            if (data.rS !== lastScores.rS) { flash('red-box', 'flash'); lastScores.rS = data.rS; }
+            document.getElementById('b-score').innerText = data.bS;
+            document.getElementById('r-score').innerText = data.rS;
+            adjustScoreSize('b-score', data.bS); adjustScoreSize('r-score', data.rS);
+            document.getElementById('b-gj').innerText = data.bG;
+            document.getElementById('r-gj').innerText = data.rG;
+            document.getElementById('r-name-display').innerText = data.rName || "HONG";
+            document.getElementById('b-name-display').innerText = data.bName || "CHUNG";
+            
+            const timerDisplay = document.getElementById('timer-display');
+            if(data.isRest) {
+                document.getElementById('round-display').innerText = `REST TIME`;
+                document.getElementById('main-console').classList.add('rest-mode');
+                timerDisplay.classList.remove('timer-paused');
+            } else {
+                document.getElementById('round-display').innerText = `ROUND ${data.round}`;
+                document.getElementById('main-console').classList.remove('rest-mode');
+                if (!data.run && data.time > 0) timerDisplay.classList.add('timer-paused');
+                else timerDisplay.classList.remove('timer-paused');
+            }
+
+            if (!data.winnerDeclared) {
+                document.getElementById('winner-banner').style.display = 'none';
+                document.getElementById('ptg-display').style.display = 'none';
+                document.getElementById('tie-selection-ui').style.display = 'none';
+                document.getElementById('r-score').classList.remove('score-flash');
+                document.getElementById('b-score').classList.remove('score-flash');
+            }
+
+            document.getElementById('btn-timer-ctrl').innerText = data.run ? "DỪNG" : "BẮT ĐẦU";
+            document.getElementById('match-num-display').innerText = data.matchNum || 1;
+            document.getElementById('weight-sign-display').innerText = data.weightSign || "";
+            document.getElementById('weight-num-display').innerText = data.weightNum || "50";
+            document.getElementById('one-ref-toggle').checked = data.oneRefMode || false;
+            document.getElementById('gap-toggle').checked = data.gapEnabled || false;
+            
+            updateDots('b-wins', data.bW); updateDots('r-wins', data.rW);
+            updateLogs('r', data.rLogs); updateLogs('b', data.bLogs);
+
+            if (data.run && !timerInterval) { currentData.time = data.time; startLocalTimer(); } 
+            else if (!data.run && timerInterval) { stopLocalTimer(); currentData.time = data.time; updateTimerDisplay(currentData.time); }
+            if (!data.run) { currentData.time = data.time; updateTimerDisplay(data.time); }
+            currentData = data;
+            checkVictoryConditions();
+        });
+
+        function updateTimerDisplay(t) {
+            const display = document.getElementById('timer-display');
+            if (t > 10) {
+                let m = Math.floor(t / 60).toString().padStart(2, '0');
+                let s = Math.floor(t % 60).toString().padStart(2, '0');
+                display.innerText = `${m}:${s}`;
+            } else {
+                let s = Math.floor(t).toString().padStart(2, '0');
+                let ms = Math.floor((t % 1) * 100).toString().padStart(2, '0');
+                display.innerText = `${s}.${ms}`;
+            }
+        }
+
+        function toggleTimer() { matchRef.update({ run: !currentData.run, time: currentData.time }); }
+
+        function startLocalTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (currentData.time > 0) {
+                    currentData.time -= 0.01; updateTimerDisplay(currentData.time);
+                    if (Math.abs(currentData.time % 1) < 0.01) matchRef.update({ time: Math.round(currentData.time) });
+                } else { 
+                    stopLocalTimer();
+                    if (currentData.isRest) {
+                        matchRef.update({ run: false, time: getSetMatchTime(), isRest: false });
+                    } else {
+                        handleAutoTimeUp();
+                    }
+                }
+            }, 10);
+        }
+
+        function stopLocalTimer() { clearInterval(timerInterval); timerInterval = null; }
+
+        function handleAutoTimeUp() {
+            if (currentData.winnerDeclared) return;
+            matchRef.update({ run: false, time: 0 });
+            if (currentData.rS > currentData.bS) {
+                celebrateWinner('red', 'red-box');
+            } else if (currentData.bS > currentData.rS) {
+                celebrateWinner('blue', 'blue-box');
+            } else {
+                let winSide = autoCheckTieBreak();
+                if (winSide) {
+                    celebrateWinner(winSide, winSide === 'red' ? 'red-box' : 'blue-box');
+                } else {
+                    document.getElementById('tie-selection-ui').style.display = 'flex';
+                }
+            }
+        }
+
+        function autoCheckTieBreak() {
+            let rTech = (currentData.r6 || 0) * 6 + (currentData.r4 || 0) * 4;
+            let bTech = (currentData.b6 || 0) * 6 + (currentData.b4 || 0) * 4;
+            if (rTech > bTech) return 'red';
+            if (bTech > rTech) return 'blue';
+            const checkOrder = [6, 4, 3, 2, 1];
+            for (let p of checkOrder) {
+                let rCount = currentData['r' + p] || 0;
+                let bCount = currentData['b' + p] || 0;
+                if (rCount > bCount) return 'red';
+                if (bCount > rCount) return 'blue';
+            }
+            return null;
+        }
+
+        function pickTieWinner(side) {
+            document.getElementById('tie-selection-ui').style.display = 'none';
+            celebrateWinner(side, side === 'red' ? 'red-box' : 'blue-box');
+        }
+
+        function celebrateWinner(winSide, boxId, isPtg = false) {
+            if (currentData.winnerDeclared) return;
+            matchRef.update({ run: false, winnerDeclared: true });
+            stopLocalTimer();
+            let newWins = (winSide === 'red') ? { rW: currentData.rW + 1 } : { bW: currentData.bW + 1 };
+            matchRef.update(newWins);
+            if (isPtg) {
+                document.getElementById('ptg-display').style.display = 'block';
+                const scoreId = winSide === 'red' ? 'r-score' : 'b-score';
+                document.getElementById(scoreId).classList.add('score-flash');
+            } else {
+                flash(boxId, 'flash-winner');
+                const banner = document.getElementById('winner-banner');
+                document.getElementById('winner-label-type').innerText = "ROUND WINNER";
+                document.getElementById('winner-name-text').innerText = winSide === 'red' ? (currentData.rName || "HONG") : (currentData.bName || "CHUNG");
+                banner.style.backgroundColor = winSide === 'red' ? "rgba(255, 23, 68, 0.95)" : "rgba(41, 98, 255, 0.95)";
+                banner.style.display = 'flex';
+            }
+        }
+
+        function nextRoundManual() {
+            if (!currentData.winnerDeclared) {
+                let winSide = '';
+                if (currentData.rS > currentData.bS) winSide = 'red';
+                else if (currentData.bS > currentData.rS) winSide = 'blue';
+                else {
+                    let winSideTie = autoCheckTieBreak();
+                    if (winSideTie) winSide = winSideTie;
+                    if (!winSide) {
+                        handleAutoTimeUp();
+                        return;
+                    }
+                }
+                celebrateWinner(winSide, winSide === 'red' ? 'red-box' : 'blue-box');
+            } else {
+                finalizeRound();
+            }
+        }
+
+        function finalizeRound() {
+            // Đảm bảo dữ liệu mặc định để không lỗi Reset
+            matchRef.set({ 
+                bS:0,rS:0,bG:0,rG:0,
+                bW:currentData.bW || 0,
+                rW:currentData.rW || 0,
+                round:(currentData.round || 1) + 1,
+                time:getSetMatchTime(),
+                run:false,isRest:false,
+                rName:currentData.rName || "HONG",
+                bName:currentData.bName || "CHUNG",
+                rLogs:[],bLogs:[],
+                gapEnabled:!!currentData.gapEnabled, 
+                oneRefMode: !!currentData.oneRefMode, 
+                winnerDeclared:false, 
+                maxGj: currentData.maxGj || 0, 
+                maxPts: currentData.maxPts || 0, 
+                matchNum: currentData.matchNum || 1, 
+                weightNum: currentData.weightNum || "50", 
+                weightSign: currentData.weightSign || "", 
+                r6:0, r4:0, r3:0, r2:0, r1:0, b6:0, b4:0, b3:0, b2:0, b1:0 
+            });
+            hitsRef.remove(); 
+            recentHits = [];
+        }
+
+        function awardPointFromRef(side, pts, refName) {
+            const logText = pts + " (" + refName + ")";
+            if (!currentData[side + 'Logs']) currentData[side + 'Logs'] = [];
+            currentData[side + 'Logs'].push(logText); 
+            currentData[side + 'S'] += pts;
+            currentData[side + pts] = (currentData[side + pts] || 0) + 1;
+            matchRef.update(currentData);
+        }
+
+        hitsRef.on('child_added', (snap) => {
+            const hit = snap.val(); const hitKey = snap.key;
+            if (!hit || !currentData.run || currentData.isRest) return;
+            const now = Date.now();
+            if (currentData.oneRefMode) {
+                awardPointFromRef(hit.type[0], parseInt(hit.type.substring(1)), hit.refId);
+                db.ref('hits/' + hitKey).remove(); return;
+            }
+            recentHits.push({ ...hit, key: hitKey });
+            recentHits = recentHits.filter(h => (now - h.time) < 2000);
+            const matches = recentHits.filter(h => h.type === hit.type && h.refId !== hit.refId);
+            if (matches.length >= 1) {
+                const combinedRefs = hit.refId + "," + matches[0].refId;
+                awardPointFromRef(hit.type[0], parseInt(hit.type.substring(1)), combinedRefs);
+                db.ref('hits/' + hitKey).remove(); db.ref('hits/' + matches[0].key).remove();
+                recentHits = recentHits.filter(h => h.key !== hitKey && h.key !== matches[0].key);
+            }
+        });
+
+        function addPointDirect(field, pts) { 
+            const side = field[0]; 
+            currentData[field] += pts; 
+            currentData[side + pts] = (currentData[side + pts] || 0) + 1;
+            if (!currentData[side + 'Logs']) currentData[side + 'Logs'] = [];
+            currentData[side + 'Logs'].push(pts + " (Thư ký)");
+            matchRef.update(currentData); 
+        }
+
+        function subPointDirect(field, pts) {
+            const side = field[0];
+            if (currentData[field] >= pts) {
+                currentData[field] -= pts;
+                if (currentData[side + pts] > 0) { currentData[side + pts]--; }
+                matchRef.update(currentData);
+            }
+        }
+
+        function updateLogs(side, logs) {
+            const container = document.getElementById(side + '-logs'); container.innerHTML = '';
+            const safeLogs = logs || []; 
+            safeLogs.forEach(val => {
+                const div = document.createElement('div'); div.className = 'log-item'; div.innerText = '+' + val; container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function checkVictoryConditions() {
+            if (currentData.winnerDeclared || currentData.isRest) return;
+            const mPts = Number(currentData.maxPts);
+            const mGj = Number(currentData.maxGj);
+            if (currentData.gapEnabled && Math.abs(currentData.rS - currentData.bS) >= 12) {
+                celebrateWinner(currentData.rS > currentData.bS ? 'red' : 'blue', currentData.rS > currentData.bS ? 'red-box' : 'blue-box', true);
+            }
+            if (mPts > 0) {
+                if (currentData.rS >= mPts) celebrateWinner('red', 'red-box');
+                else if (currentData.bS >= mPts) celebrateWinner('blue', 'blue-box');
+            }
+            if (mGj > 0) {
+                if (currentData.rG >= mGj) celebrateWinner('blue', 'blue-box');
+                else if (currentData.bG >= mGj) celebrateWinner('red', 'red-box');
+            }
+        }
+
+        function addGj(f) { 
+            currentData[f] += 1; const opp = f === 'bG' ? 'r' : 'b'; currentData[opp + 'S'] += 1; 
+            matchRef.update(currentData);
+        }
+        
+        function subGj(f) { 
+            if(currentData[f] > 0) { 
+                currentData[f] -= 1; const opp = f === 'bG' ? 'r' : 'b'; 
+                if(currentData[opp + 'S'] > 0) currentData[opp + 'S'] -= 1; 
+                matchRef.update(currentData); 
+            } 
+        }
+
+        function updateRefPassword(id) { db.ref('referee_passwords/' + id).set(document.getElementById('pw-' + id).value); }
+        function updateWeight() { matchRef.update({ weightSign: document.getElementById('in-weight-combined').value.startsWith('+') || document.getElementById('in-weight-combined').value.startsWith('-') ? document.getElementById('in-weight-combined').value.charAt(0) : "", weightNum: document.getElementById('in-weight-combined').value.replace(/^[+-]/, "") }); }
+        function toggleOneRef() { matchRef.update({ oneRefMode: document.getElementById('one-ref-toggle').checked }); }
+        function updateRules() { matchRef.update({ maxGj: Number(document.getElementById('in-max-gj').value), maxPts: Number(document.getElementById('in-max-pts').value) }); }
+        function updateNames() { matchRef.update({ rName: document.getElementById('in-r-name').value || currentData.rName, bName: document.getElementById('in-b-name').value || currentData.bName }); }
+        function updateMatchNum() { matchRef.update({ matchNum: parseInt(document.getElementById('in-match-num').value) || 1 }); }
+        function setCustomTime() { matchRef.update({ time: getSetMatchTime(), isRest: false }); }
+        function setRestTime() { matchRef.update({ time: (parseInt(document.getElementById('in-rest-min').value)*60) + parseInt(document.getElementById('in-rest-sec').value), isRest: true, run: false }); }
+        function toggleGap() { matchRef.update({ gapEnabled: document.getElementById('gap-toggle').checked }); }
+        function flash(id, className) { const el = document.getElementById(id); el.classList.remove('flash', 'flash-winner'); void el.offsetWidth; el.classList.add(className); }
+        function updateDots(id, count) { const dots = document.getElementById(id).children; for(let i=0; i<2; i++) { dots[i].className = i < count ? 'dot active' : 'dot'; } }
+        function adjustScoreSize(id, score) { const el = document.getElementById(id); if (score >= 100) el.style.fontSize = "20vw"; else if (score >= 10) el.style.fontSize = "24vw"; else el.style.fontSize = "27vw"; }
+        
+        function resetAll() { 
+            if(confirm("Reset toàn bộ trận đấu?")) { 
+                stopLocalTimer(); 
+                // Sử dụng giá trị tuyệt đối hoặc dự phòng để tránh undefined làm crash hàm Reset
+                matchRef.set({
+                    bS:0,rS:0,bG:0,rG:0,bW:0,rW:0,round:1,
+                    time:getSetMatchTime() || 120,
+                    run:false,isRest:false,
+                    rName:currentData.rName || "HONG",
+                    bName:currentData.bName || "CHUNG",
+                    rLogs:[],bLogs:[],
+                    gapEnabled:!!currentData.gapEnabled, 
+                    oneRefMode: !!currentData.oneRefMode, 
+                    winnerDeclared: false, 
+                    maxGj: currentData.maxGj || 0, 
+                    maxPts: currentData.maxPts || 0, 
+                    matchNum: currentData.matchNum || 1, 
+                    weightNum: currentData.weightNum || "50", 
+                    weightSign: currentData.weightSign || "", 
+                    r6:0, r4:0, r3:0, r2:0, r1:0, b6:0, b4:0, b3:0, b2:0, b1:0
+                }); 
+                hitsRef.remove(); 
+                recentHits = []; 
+            } 
+        }
+    </script>
+</body>
+</html>
