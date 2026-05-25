@@ -19,25 +19,24 @@
             margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; text-transform: uppercase;
         }
 
-        /* --- CẬP NHẬT: MÀN HÌNH KHÓA TRONG SUỐT MỜ --- */
         #password-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0); /* Màu đen trong suốt 60% */
-            backdrop-filter: blur(15px); /* Hiệu ứng làm mờ bảng điểm phía sau */
-            -webkit-backdrop-filter: blur(15px); /* Hỗ trợ Safari */
+            background: rgba(0, 0, 0, 0); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px); 
             z-index: 9999; display: flex;
             flex-direction: column; justify-content: center; align-items: center;
             transition: 0.5s;
         }
         .pw-box {
-            background: rgba(26, 26, 26, 0.9); /* Hộp nhập liệu hơi đục để nổi bật */
+            background: rgba(26, 26, 26, 0.9); 
             padding: 40px; border-radius: 15px;
             border: 2px solid var(--gold); text-align: center;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
         }
         .pw-input {
             padding: 15px; font-size: 1.5rem; border-radius: 8px; border: 1px solid #444;
-            background: #FFFFFF; color: #000; /* Để màu đen cho dễ nhìn trên nền trắng */
+            background: #FFFFFF; color: #000; 
             text-align: center; width: 250px; margin-bottom: 20px;
             outline: none;
         }
@@ -49,16 +48,17 @@
             transition: 0.2s;
         }
         .pw-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
-        /* ---------------------------------- */
 
+        /* Header nền đen phủ toàn bộ chiều ngang 100% */
         .top-header-bar {
             position: absolute; top: 0; left: 0; width: 100%;
             background: #000000; height: 6vh; display: flex;
             justify-content: center; align-items: center;
             border-bottom: 0px solid #333; z-index: 1000;
+            white-space: nowrap;
         }
         .weight-info { font-size: 3vh; font-weight: 900; color: #ffffff; letter-spacing: 0.3vw; }
-        
+         
         #winner-banner {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; padding: 4vh 0; display: none; flex-direction: column;
@@ -71,11 +71,11 @@
         #winner-banner p { font-size: 2.5vw; margin: 0; font-weight: bold; letter-spacing: 1.5vw; color: var(--gold); }
 
         .tie-selection-box { 
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            position: fixed; top: calc(50% + 10vh); left: 50%; transform: translate(-50%, -50%);
             display: none; flex-direction: column; align-items: center; gap: 10px; z-index: 6000;
-            width: 19vw; background: transparent; border: none;
+            width: 12.16vw; background: transparent; border: none;
         }
-        
+         
         .tie-label-tag {
             background: white; color: black; padding: 4px 12px;
             font-size: 1.1vw; font-weight: 900; border-radius: 4px;
@@ -86,6 +86,7 @@
 
         .btn-select { 
             flex: 1; padding: 12px 0; font-size: 1.3vw; font-weight: 900; 
+            font-family: Arial, sans-serif;
             border: 2px solid white; border-radius: 8px; cursor: pointer; 
             color: white; text-transform: uppercase; transition: 0.2s;
         }
@@ -100,30 +101,86 @@
             box-shadow: 0 0 10vh rgba(255, 234, 0, 0.5);
         }
 
+        /* Giảm padding-bottom xuống 15vh để dọn chỗ cho việc đẩy điểm xuống 5vh */
         .side { 
             flex: 1; width: 50%; display: flex; flex-direction: column; 
             align-items: center; justify-content: space-between; 
-            padding: 5vh 0 20vh 0; 
+            padding: 6vh 0 15vh 0; 
             position: relative; box-sizing: border-box; 
         }
-        .red { background: linear-gradient(145deg, #80001a 0%, var(--red-side) 100%); border-right: 0.2vw solid #111; }
-        .blue { background: linear-gradient(215deg, #001e80 0%, var(--blue-side) 100%); }
-
-        .player-label { font-size: 4vh; font-weight: 900; letter-spacing: 0.1vw; height: 10vh; display: flex; align-items: center; }
         
-        .score-container { height: 40vh; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
-        .score { font-size: 27vw; font-weight: 900; line-height: 0.8; font-family: 'Arial Black', sans-serif; text-shadow: 0 2vh 5vh rgba(0,0,0,0.9); }
+        /* Thêm padding-left 10vh để bù trừ viền đen bên trái, giúp nội dung căn giữa màu đỏ tươi */
+        .red { 
+            background: var(--red-side); 
+            padding-right: 6.08vw;
+            padding-left: 10vh;
+            box-shadow: inset 10vh 16vh 0 0 rgba(0, 0, 0, 0.2); 
+        }
+        
+        /* Thêm padding-right 10vh để bù trừ viền đen bên phải, giúp nội dung căn giữa màu xanh tươi */
+        .blue { 
+            background: var(--blue-side); 
+            padding-left: 6.08vw;
+            padding-right: 10vh;
+            box-shadow: inset -10vh 16vh 0 0 rgba(0, 0, 0, 0.2); 
+        }
 
-        .point-log { position: absolute; top: 12vh; width: 8vw; height: 50vh; display: flex; flex-direction: column; gap: 0.5vh; overflow-y: auto; scrollbar-width: none; z-index: 999; }
-        #r-logs { left: 1vw; align-items: flex-start; }
-        #b-logs { right: 1vw; align-items: flex-end; }
-        .log-item { font-size: 1.5vh; font-weight: 800; color: rgba(255, 255, 255, 0.8); background: rgba(0,0,0,0.3); padding: 0.4vh 0.8vw; border-radius: 0.5vh; white-space: nowrap; border-left: 0.3vw solid var(--gold); }
+        .center-black-gap {
+            position: absolute;
+            top: 16vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12.16vw;
+            bottom: 0;
+            background: var(--bg-dark);
+            z-index: 50;
+        }
+
+        .player-label { font-size: 4vh; font-weight: 900; letter-spacing: 0.1vw; height: 10vh; display: flex; align-items: center; justify-content: center; width: 100%; }
+        .red-name-bar { background: transparent; }
+        .blue-name-bar { background: transparent; }
+         
+        /* Thêm margin-top 5vh để đẩy toàn bộ Điểm số và thông tin bên dưới xuống */
+        .score-container { height: 40vh; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; margin-top: 5vh; }
+        .score { font-size: 27vw; font-weight: 900; line-height: 0.8; font-family: 'Arial Black', sans-serif; text-shadow: 0 2vh 5vh rgba(0,0,0,0.9); color: white; }
+
+        /* --- NHẬT KÝ ĐIỂM SỐ NẰM TRỌN TRONG VIỀN 10VH --- */
+        .point-log { 
+            position: absolute; 
+            top: 18vh; 
+            width: 9vh; /* Khống chế độ rộng nằm lọt trong viền 10vh */
+            height: 55vh; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.5vh; 
+            overflow-y: auto; 
+            scrollbar-width: none; 
+            z-index: 999; 
+        }
+        #r-logs { left: 0.5vh; align-items: center; } /* Đẩy sát mép trái và căn giữa các log */
+        #b-logs { right: 0.5vh; align-items: center; } /* Đẩy sát mép phải và căn giữa các log */
+        
+        .log-item { 
+            font-size: 1.1vh; /* Giảm nhỏ font chữ */
+            font-weight: 800; 
+            color: rgba(255, 255, 255, 0.9); 
+            background: rgba(0,0,0,0.5); 
+            padding: 0.4vh; 
+            border-radius: 0.4vh; 
+            white-space: nowrap; 
+            max-width: 8.5vh; /* Giới hạn độ dài để không tràn khung */
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            border-left: 0.2vh solid var(--gold); 
+            text-align: center; 
+        }
+        /* ----------------------------------------------- */
 
         .footer-info { 
             display: flex; flex-direction: column; align-items: center; 
             height: 22vh; justify-content: center; z-index: 10; 
         }
-        
+         
         .gj-container { 
             background: rgba(0,0,0,0.95); padding: 1vh 1vw; border-radius: 10vh; border: 0.2vh solid rgba(255,255,255,0.15); 
             display: flex; flex-direction: column; align-items: center; min-width: 10vw;
@@ -136,25 +193,38 @@
         .dot.active { background: var(--gold); box-shadow: 0 0 2vh var(--gold); border-color: white; }
 
         .match-display-container {
-            position: absolute; top: 6.2vh; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.95); padding: 0.5vh 3vw; 
+            position: absolute; top: 17vh; left: 50%; transform: translateX(-50%);
+            background: transparent; padding: 0.5vh 3vw; 
             display: flex; flex-direction: column; align-items: center; z-index: 200;
         }
         .match-label { font-size: 3vh; color: white; font-weight: 900; line-height: 1; }
         .match-value { font-size: 7vh; font-weight: 900; line-height: 0.9; color: white; }
 
         .center-console { 
-            position: absolute; bottom: 25vh; left: 50%; transform: translateX(-50%); 
-            background: rgba(0,0,0,0.95); border: 0.3vh solid #ffffff; border-radius: 10vh; 
-            padding: 1vh 0vw; text-align: center; display: flex; flex-direction: column; align-items: center;
-            min-width: 19vw; z-index: 100; 
+            position: absolute; top: 31vh; left: 50%; transform: translateX(-50%); 
+            background: transparent; 
+            padding: 0; text-align: center; display: flex; flex-direction: column; align-items: center;
+            width: 12.16vw; z-index: 100; box-sizing: border-box;
         }
-        #round-display { font-size: 3.5vh; font-weight: bold; color: #ffffff; }
-        #timer-display { font-size: 11vh; color: var(--gold); font-family: 'Courier New', monospace; font-weight: bold; line-height: 1; }
+        #round-display { font-size: 3.5vh; font-weight: bold; color: #ffffff; margin-bottom: 5px; }
+        
+        #timer-display { 
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; box-sizing: border-box;
+            font-size: 8vh; color: var(--gold); font-family: Arial, sans-serif; font-weight: bold; line-height: 1; 
+            border: 0.3vh solid #ffffff; padding: 0.5vh 0;
+        }
+
+        .timer-alert { animation: flash-timer 1s infinite; }
+        @keyframes flash-timer {
+            0% { background: var(--gold); color: black; border-color: black; }
+            50% { background: var(--bg-dark); color: var(--gold); border-color: var(--gold); }
+            100% { background: var(--gold); color: black; border-color: black; }
+        }
 
         .signature-text {
-            position: absolute; bottom: 23vh; left: 49.06%; transform: translateX(-50%);
-            color: #ffffff; font-weight: bold; font-size: 1.2vh; text-transform: none; 
+            position: absolute; bottom: 3vh; left: 50%; transform: translateX(-50%);
+            color: #ffffff; font-weight: bold; font-size: 1vh; text-transform: none; 
             z-index: 50; letter-spacing: 1px; opacity: 0.7;
         }
 
@@ -181,7 +251,6 @@
 </head>
 <body>
 
-    <!-- --- PHẦN HTML: MÀN HÌNH KHÓA --- -->
     <div id="password-overlay">
         <div class="pw-box">
             <h2 style="color: var(--gold); margin-bottom: 30px;">HỆ THỐNG BẢNG ĐIỂM FOX-TAEKWONDO</h2>
@@ -194,8 +263,9 @@
     <div class="top-header-bar">
         <div class="weight-info">HẠNG CÂN: <span id="weight-sign-display"></span><span id="weight-num-display">50</span> KG</div>
     </div>
-    <div id="ptg-display">PTG</div>
     
+    <div id="ptg-display">PTG</div>
+     
     <div id="tie-selection-ui" class="tie-selection-box">
         <div class="tie-label-tag">Hòa Tuyệt Đối</div>
         <div class="btn-select-row">
@@ -209,13 +279,21 @@
         <h1 id="winner-name-text">TÊN VĐV</h1>
     </div>
 
+    <div class="center-black-gap"></div>
+
     <div class="match-display-container">
         <div class="match-label">MATCH</div>
         <div id="match-num-display" class="match-value">1</div>
     </div>
-    
+     
+    <div class="center-console" id="main-console">
+        <div id="round-display">ROUND 1</div>
+        <div id="timer-display">02:00</div>
+    </div>
+    <div class="signature-text">Nguyễn Minh Quân - 0937.707.001</div>
+     
     <div class="side red" id="red-box">
-        <div class="player-label" id="r-name-display">HONG (Đỏ)</div>
+        <div class="player-label red-name-bar" id="r-name-display">HONG (Đỏ)</div>
         <div class="score-container"><div class="score" id="r-score">0</div></div>
         <div class="footer-info">
             <div class="gj-container"><div class="gj-label">GAM-JEOM</div><div id="r-gj" class="gj-value">0</div></div>
@@ -223,14 +301,8 @@
         </div>
     </div>
 
-    <div class="center-console" id="main-console">
-        <div id="round-display">ROUND 1</div>
-        <div id="timer-display">02:00</div>
-    </div>
-    <div class="signature-text">Nguyễn Minh Quân - 0937.707.001</div>
-
     <div class="side blue" id="blue-box">
-        <div class="player-label" id="b-name-display">CHUNG (Xanh)</div>
+        <div class="player-label blue-name-bar" id="b-name-display">CHUNG (Xanh)</div>
         <div class="score-container"><div class="score" id="b-score">0</div></div>
         <div class="footer-info">
             <div class="gj-container"><div class="gj-label">GAM-JEOM</div><div id="b-gj" class="gj-value">0</div></div>
@@ -285,7 +357,7 @@
                     </select>
                 </label>
             </div>
-            
+             
             <div style="display:flex; flex-direction:column; gap:6px; border-right: 1px solid #444; padding-right: 10px;">
                 <div class="btn-row">
                     <label>TRẬN: </label>
@@ -361,20 +433,20 @@
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCXOkedrQlH6vpLI_wYMzTvV5fsbrlWhWU",
+        const firebaseConfig = {  apiKey: "AIzaSyCXOkedrQlH6vpLI_wYMzTvV5fsbrlWhWU",
   authDomain: "tkdtrungan-41f63.firebaseapp.com",
   databaseURL: "https://tkdtrungan-41f63-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "tkdtrungan-41f63",
   storageBucket: "tkdtrungan-41f63.firebasestorage.app",
   messagingSenderId: "59952016876",
   appId: "1:59952016876:web:4716bd2eb1bde2d6b624c9",
-  measurementId: "G-ZHLQT8FD5H" };
+  measurementId: "G-ZHLQT8FD5H"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const matchRef = db.ref('match');
         const hitsRef = db.ref('hits');
 
-        // --- PHẦN JS: LOGIC BẢO MẬT ---
         function verifyAccess() {
             const userIn = document.getElementById('access-pw').value;
             db.ref('settings/access_password').once('value').then((snap) => {
@@ -438,7 +510,6 @@
         matchRef.on('value', (snap) => {
             const data = snap.val(); if(!data) return;
             
-            // Vá lỗi mảng rỗng bị Firebase xóa
             data.rLogs = data.rLogs || [];
             data.bLogs = data.bLogs || [];
 
@@ -450,6 +521,33 @@
             document.getElementById('b-score').innerText = data.bS;
             document.getElementById('r-score').innerText = data.rS;
             adjustScoreSize('b-score', data.bS); adjustScoreSize('r-score', data.rS);
+
+            const rScoreEl = document.getElementById('r-score');
+            const bScoreEl = document.getElementById('b-score');
+            if (data.rS > data.bS) {
+                rScoreEl.style.color = "var(--gold)";
+                bScoreEl.style.color = "white";
+            } else if (data.bS > data.rS) {
+                bScoreEl.style.color = "var(--gold)";
+                rScoreEl.style.color = "white";
+            } else {
+                let currentDataTemp = currentData;
+                currentData = data;
+                let tieWinner = autoCheckTieBreak();
+                currentData = currentDataTemp;
+
+                if (tieWinner === 'red') {
+                    rScoreEl.style.color = "var(--gold)";
+                    bScoreEl.style.color = "white";
+                } else if (tieWinner === 'blue') {
+                    bScoreEl.style.color = "var(--gold)";
+                    rScoreEl.style.color = "white";
+                } else {
+                    rScoreEl.style.color = "white";
+                    bScoreEl.style.color = "white";
+                }
+            }
+
             document.getElementById('b-gj').innerText = data.bG;
             document.getElementById('r-gj').innerText = data.rG;
             document.getElementById('r-name-display').innerText = data.rName || "HONG";
@@ -494,6 +592,13 @@
 
         function updateTimerDisplay(t) {
             const display = document.getElementById('timer-display');
+            
+            if (t > 0 && t <= 10) {
+                display.classList.add('timer-alert');
+            } else {
+                display.classList.remove('timer-alert');
+            }
+
             if (t > 10) {
                 let m = Math.floor(t / 60).toString().padStart(2, '0');
                 let s = Math.floor(t % 60).toString().padStart(2, '0');
@@ -603,7 +708,6 @@
         }
 
         function finalizeRound() {
-            // Đảm bảo dữ liệu mặc định để không lỗi Reset
             matchRef.set({ 
                 bS:0,rS:0,bG:0,rG:0,
                 bW:currentData.bW || 0,
@@ -729,7 +833,6 @@
         function resetAll() { 
             if(confirm("Reset toàn bộ trận đấu?")) { 
                 stopLocalTimer(); 
-                // Sử dụng giá trị tuyệt đối hoặc dự phòng để tránh undefined làm crash hàm Reset
                 matchRef.set({
                     bS:0,rS:0,bG:0,rG:0,bW:0,rW:0,round:1,
                     time:getSetMatchTime() || 120,
